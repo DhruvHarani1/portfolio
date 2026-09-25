@@ -7,6 +7,37 @@ interface Line {
   text: string;
 }
 
+const NEOFETCH = `dhruv@dhruv-os
+---------------
+OS: Dhruv OS (Next.js Edition)
+Host: dhruvharani.dev
+Kernel: React 19.2.8
+Shell: TypeScript
+DE: Windows 11-style
+Role: Full-stack engineer @ FloIndex Ventures
+Projects: 5+ shipped, 2 live in production
+Languages: Python, TypeScript, Java, JavaScript
+Uptime: since 2026 (this desktop, anyway)`;
+
+const ABOUT_MD = `# About Dhruv
+
+Full-stack engineer building products people actually use.
+Backend-leaning, product-minded — comfortable owning a feature
+from database schema to shipped UI.
+
+Currently: Software Developer Intern @ FloIndex Ventures,
+working on Clarityy AI (Python/FastAPI + React/Vite).
+
+B.Tech Computer Engineering @ LJ University, expected 2028.`;
+
+const PROJECT_FILES = [
+  "clarityy-ai/",
+  "hms/",
+  "nexus/",
+  "pg-manager/",
+  "devpain-ai/",
+];
+
 const COMMANDS: Record<string, string> = {
   whoami:
     "Dhruv Harani — Full-stack engineer. Backend-leaning, product-minded.",
@@ -18,7 +49,13 @@ const COMMANDS: Record<string, string> = {
     "Email: dhruvharani5@gmail.com · GitHub: github.com/DhruvHarani1 · LinkedIn: linkedin.com/in/dhruv-harani",
   resume: "Open the Resume app from the dock, or run 'download resume'.",
   sudo: "Nice try. Permission denied — you're not root here. 😉",
-  help: "Available commands: whoami, skills, projects, contact, resume, clear, help",
+  neofetch: NEOFETCH,
+  "cat about.md": ABOUT_MD,
+  "cat about": ABOUT_MD,
+  ls: PROJECT_FILES.join("  "),
+  "ls projects": PROJECT_FILES.join("  "),
+  "ls projects/": PROJECT_FILES.join("  "),
+  help: "Available commands: neofetch, whoami, skills, projects, contact, resume, ls, cat about.md, date, clear, help",
 };
 
 export default function TerminalApp() {
@@ -39,6 +76,15 @@ export default function TerminalApp() {
 
     if (trimmed === "clear") {
       setLines([]);
+      return;
+    }
+
+    if (trimmed === "date") {
+      setLines((prev) => [
+        ...prev,
+        { type: "input", text: trimmed },
+        { type: "output", text: new Date().toString() },
+      ]);
       return;
     }
 

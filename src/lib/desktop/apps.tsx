@@ -157,7 +157,7 @@ export const APPS: AppMeta[] = [
     id: "settings",
     name: "Settings",
     accent: "linear-gradient(160deg, #B0B4BB 0%, #6B7280 100%)",
-    defaultSize: { width: 460, height: 460 },
+    defaultSize: { width: 560, height: 460 },
     icon: (
       <svg viewBox="0 0 24 24" className="h-full w-full" fill="none" stroke="white" strokeWidth="1.6">
         <path
