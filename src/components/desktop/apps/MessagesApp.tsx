@@ -25,8 +25,11 @@ export default function MessagesApp() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [adminTyping, setAdminTyping] = useState(false);
+  const [errorText, setErrorText] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const adminTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,8 +102,15 @@ export default function MessagesApp() {
           setMessages((prev) =>
             prev.some((m) => m.id === row.id) ? prev : [...prev, row]
           );
+          if (row.sender === "dhruv") setAdminTyping(false);
         }
       )
+      .on("broadcast", { event: "typing" }, (payload) => {
+        if (payload.payload?.sender !== "dhruv") return;
+        setAdminTyping(true);
+        if (adminTypingTimeoutRef.current) clearTimeout(adminTypingTimeoutRef.current);
+        adminTypingTimeoutRef.current = setTimeout(() => setAdminTyping(false), 3000);
+      })
       .subscribe();
 
     channelRef.current = channel;
@@ -108,6 +118,7 @@ export default function MessagesApp() {
     return () => {
       cancelled = true;
       supabase.removeChannel(channel);
+      if (adminTypingTimeoutRef.current) clearTimeout(adminTypingTimeoutRef.current);
     };
   }, [conversationId]);
 
@@ -137,6 +148,14 @@ export default function MessagesApp() {
     setStatus("ready");
   }
 
+  function handleDraftChange(value: string) {
+    setDraft(value);
+    setErrorText(null);
+    const channel = channelRef.current;
+    if (!channel) return;
+    channel.send({ type: "broadcast", event: "typing", payload: { sender: "visitor" } });
+  }
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     if (!conversationId || !draft.trim() || sending) return;
@@ -144,6 +163,7 @@ export default function MessagesApp() {
     if (!supabase) return;
 
     setSending(true);
+    setErrorText(null);
     const body = draft.trim();
     setDraft("");
 
@@ -161,6 +181,11 @@ export default function MessagesApp() {
 
     if (error) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      setErrorText(
+        error.message?.includes("rate_limited")
+          ? "You're sending messages too fast — take a breath and try again in a bit."
+          : "Message didn't send — try again."
+      );
     }
     setSending(false);
   }
@@ -242,11 +267,23 @@ export default function MessagesApp() {
             </div>
           </div>
         ))}
+        {adminTyping && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-1 rounded-2xl bg-bg-elevated px-3.5 py-2.5">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-tertiary [animation-delay:-0.2s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-tertiary [animation-delay:-0.1s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-tertiary" />
+            </div>
+          </div>
+        )}
       </div>
+      {errorText && (
+        <p className="px-4 pb-1 text-xs text-red-400">{errorText}</p>
+      )}
       <form onSubmit={handleSend} className="flex gap-2 border-t border-white/5 p-3">
         <input
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => handleDraftChange(e.target.value)}
           placeholder="Message"
           className="flex-1 rounded-full border border-white/10 bg-bg-elevated px-4 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent-green/40 focus:outline-none"
         />

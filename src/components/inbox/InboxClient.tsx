@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface Conversation {
   id: string;
@@ -26,7 +28,11 @@ export default function InboxClient() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [search, setSearch] = useState("");
+  const [visitorTyping, setVisitorTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const visitorTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
   const loadConversations = useCallback(async () => {
@@ -77,6 +83,42 @@ export default function InboxClient() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
+  // Typing indicator — a broadcast-only channel (no DB writes/RLS involved),
+  // safe to use with the public anon key on both the visitor and admin side.
+  useEffect(() => {
+    const reset = setTimeout(() => setVisitorTyping(false), 0);
+    if (!activeId) return () => clearTimeout(reset);
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return () => clearTimeout(reset);
+
+    const channel = supabase
+      .channel(`messages-${activeId}`)
+      .on("broadcast", { event: "typing" }, (payload) => {
+        if (payload.payload?.sender !== "visitor") return;
+        setVisitorTyping(true);
+        if (visitorTypingTimeoutRef.current) clearTimeout(visitorTypingTimeoutRef.current);
+        visitorTypingTimeoutRef.current = setTimeout(() => setVisitorTyping(false), 3000);
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      clearTimeout(reset);
+      supabase.removeChannel(channel);
+      if (visitorTypingTimeoutRef.current) clearTimeout(visitorTypingTimeoutRef.current);
+    };
+  }, [activeId]);
+
+  function handleDraftChange(value: string) {
+    setDraft(value);
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { sender: "dhruv" },
+    });
+  }
+
   async function handleReply(e: React.FormEvent) {
     e.preventDefault();
     if (!activeId || !draft.trim() || sending) return;
@@ -101,6 +143,11 @@ export default function InboxClient() {
   }
 
   const active = conversations.find((c) => c.id === activeId);
+  const filteredConversations = conversations.filter((c) =>
+    (c.visitor_name || "Anonymous visitor")
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
 
   return (
     <div className="flex h-screen">
@@ -115,11 +162,21 @@ export default function InboxClient() {
             Log out
           </button>
         </div>
+        <div className="border-b border-white/5 px-3 py-2.5">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search conversations"
+            className="w-full rounded-full border border-white/10 bg-bg-primary px-3 py-1.5 text-xs text-text-primary placeholder:text-text-tertiary focus:border-link-blue/40 focus:outline-none"
+          />
+        </div>
         <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 && (
-            <p className="p-4 text-sm text-text-tertiary">No conversations yet.</p>
+          {filteredConversations.length === 0 && (
+            <p className="p-4 text-sm text-text-tertiary">
+              {conversations.length === 0 ? "No conversations yet." : "No matches."}
+            </p>
           )}
-          {conversations.map((c) => (
+          {filteredConversations.map((c) => (
             <button
               key={c.id}
               onClick={() => setActiveId(c.id)}
@@ -151,6 +208,9 @@ export default function InboxClient() {
               <p className="text-sm font-semibold text-text-primary">
                 {active.visitor_name || "Anonymous visitor"}
               </p>
+              {visitorTyping && (
+                <p className="mt-0.5 text-xs text-link-blue">typing…</p>
+              )}
             </div>
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-6 py-4">
               {messages.map((m) => (
@@ -173,7 +233,7 @@ export default function InboxClient() {
             <form onSubmit={handleReply} className="flex gap-2 border-t border-white/5 p-4">
               <input
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                onChange={(e) => handleDraftChange(e.target.value)}
                 placeholder="Type a reply…"
                 className="flex-1 rounded-full border border-white/10 bg-bg-elevated px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-link-blue/40 focus:outline-none"
               />
