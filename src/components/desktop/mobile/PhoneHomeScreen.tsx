@@ -14,7 +14,10 @@ interface PhoneHomeScreenProps {
 
 export default function PhoneHomeScreen({ deviceType, onOpenApp }: PhoneHomeScreenProps) {
   const isIOS = deviceType === "ios";
-  const gridApps = APPS.filter((a) => !DOCK_APPS.includes(a.id));
+  // Task Manager / Recycle Bin stay off the phone grid too — they're
+  // desktop-metaphor apps (Ctrl+Alt+Del, a literal bin icon) that don't
+  // make sense as touchable mobile apps.
+  const gridApps = APPS.filter((a) => !DOCK_APPS.includes(a.id) && a.pinned !== false);
   const dockApps = DOCK_APPS.map((id) => APPS.find((a) => a.id === id)!);
 
   return (
@@ -25,6 +28,7 @@ export default function PhoneHomeScreen({ deviceType, onOpenApp }: PhoneHomeScre
           <button
             key={app.id}
             onClick={() => onOpenApp(app.id)}
+            aria-label={`Open ${app.name}`}
             className="flex flex-col items-center gap-1.5 active:opacity-70"
           >
             <div className={isIOS ? "rounded-[18px] overflow-hidden" : "rounded-2xl overflow-hidden"}>

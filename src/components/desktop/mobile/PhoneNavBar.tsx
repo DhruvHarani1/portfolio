@@ -1,18 +1,42 @@
 "use client";
 
+import { useRef } from "react";
 import type { DeviceType } from "@/lib/desktop/useDeviceType";
 
 interface PhoneNavBarProps {
   deviceType: DeviceType;
   onHome: () => void;
+  onRecents: () => void;
 }
 
-export default function PhoneNavBar({ deviceType, onHome }: PhoneNavBarProps) {
+const LONG_PRESS_MS = 450;
+
+export default function PhoneNavBar({ deviceType, onHome, onRecents }: PhoneNavBarProps) {
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressed = useRef(false);
+
+  function startPress() {
+    longPressed.current = false;
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      onRecents();
+    }, LONG_PRESS_MS);
+  }
+
+  function endPress() {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    if (!longPressed.current) onHome();
+  }
+
   if (deviceType === "ios") {
     return (
       <button
-        onClick={onHome}
-        aria-label="Go home"
+        onMouseDown={startPress}
+        onMouseUp={endPress}
+        onMouseLeave={() => pressTimer.current && clearTimeout(pressTimer.current)}
+        onTouchStart={startPress}
+        onTouchEnd={endPress}
+        aria-label="Go home (hold for recent apps)"
         className="flex h-8 shrink-0 items-center justify-center bg-black"
       >
         <div className="h-1.5 w-32 rounded-full bg-white" />
@@ -30,7 +54,7 @@ export default function PhoneNavBar({ deviceType, onHome }: PhoneNavBarProps) {
       <button onClick={onHome} aria-label="Home" className="text-white/80 active:text-white">
         <div className="h-4 w-4 rounded-full border-2 border-current" />
       </button>
-      <button onClick={onHome} aria-label="Recent apps" className="text-white/80 active:text-white">
+      <button onClick={onRecents} aria-label="Recent apps" className="text-white/80 active:text-white">
         <div className="h-3.5 w-3.5 rounded-[3px] border-2 border-current" />
       </button>
     </div>

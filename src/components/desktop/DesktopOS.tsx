@@ -18,6 +18,8 @@ import ContextMenu from "./ContextMenu";
 import PhoneStatusBar from "./mobile/PhoneStatusBar";
 import PhoneHomeScreen from "./mobile/PhoneHomeScreen";
 import PhoneNavBar from "./mobile/PhoneNavBar";
+import PhoneAppSwitcher from "./mobile/PhoneAppSwitcher";
+import ShortcutsOverlay from "./ShortcutsOverlay";
 import GalleryApp from "./apps/GalleryApp";
 import MessagesApp from "./apps/MessagesApp";
 import MailApp from "./apps/MailApp";
@@ -47,6 +49,9 @@ const DESKTOP_ICON_LABELS: Partial<Record<AppId, string>> = {
 export default function DesktopOS({ repos }: DesktopOSProps) {
   const [stage, setStage] = useState<Stage>("booting");
   const [mobileApp, setMobileApp] = useState<AppId | null>(null);
+  const [recentMobileApps, setRecentMobileApps] = useState<AppId[]>([]);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { windows, openAppCentered, focusWindow, closeWindow, snapPreview } = useWindowStore();
   const { wallpaperId, soundEnabled } = useSettingsStore();
   const deviceType = useDeviceType();
@@ -72,6 +77,12 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
       return;
     }
     openAppCentered(appId);
+  }
+
+  function openMobileApp(appId: AppId) {
+    setMobileApp(appId);
+    setSwitcherOpen(false);
+    setRecentMobileApps((prev) => [appId, ...prev.filter((id) => id !== appId)].slice(0, 6));
   }
 
   function renderApp(appId: AppId) {
@@ -103,14 +114,29 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
     }
   }
 
-  // Ctrl+Alt+Delete opens Task Manager, like a real OS
+  // Ctrl+Alt+Delete opens Task Manager, "?" shows shortcuts — both skipped
+  // while typing in any app's own input (Terminal, chat, address bar, etc).
   useEffect(() => {
     if (isMobile) return;
+    function isTypingTarget(target: EventTarget | null) {
+      if (!(target instanceof HTMLElement)) return false;
+      return (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      );
+    }
     function handleKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.altKey && e.key === "Delete") {
         e.preventDefault();
         handleIconOpen("taskmgr");
+        return;
       }
+      if (e.key === "?" && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        setShortcutsOpen((o) => !o);
+      }
+      if (e.key === "Escape") setShortcutsOpen(false);
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -135,10 +161,21 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
             <div className="min-h-0 flex-1 bg-bg-elevated text-text-primary">
               {renderApp(mobileApp)}
             </div>
-            <PhoneNavBar deviceType={deviceType} onHome={() => setMobileApp(null)} />
+            <PhoneNavBar
+              deviceType={deviceType}
+              onHome={() => setMobileApp(null)}
+              onRecents={() => setSwitcherOpen(true)}
+            />
           </div>
         ) : (
-          <PhoneHomeScreen deviceType={deviceType} onOpenApp={setMobileApp} />
+          <PhoneHomeScreen deviceType={deviceType} onOpenApp={openMobileApp} />
+        )}
+        {switcherOpen && (
+          <PhoneAppSwitcher
+            recentApps={recentMobileApps}
+            onSelect={openMobileApp}
+            onClose={() => setSwitcherOpen(false)}
+          />
         )}
       </WallpaperBackground>
     );
@@ -175,6 +212,11 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
             {
               label: "Display settings",
               onClick: () => handleIconOpen("settings"),
+              separatorBefore: true,
+            },
+            {
+              label: "Keyboard shortcuts",
+              onClick: () => setShortcutsOpen(true),
               separatorBefore: true,
             },
           ])
@@ -264,6 +306,8 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
           onClose={iconMenu.close}
         />
       )}
+
+      {shortcutsOpen && <ShortcutsOverlay onClose={() => setShortcutsOpen(false)} />}
     </WallpaperBackground>
   );
 }
