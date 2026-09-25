@@ -30,18 +30,26 @@ export default function WallpaperBackground({
   // which already gives the absolutely-positioned layers below a valid
   // containing block — adding `relative` here would fight `fixed` in
   // Tailwind's cascade and collapse this box to zero height.
+  //
+  // The two image layers are `position: absolute`, so per CSS stacking
+  // rules they paint *after* (on top of) normal-flow content in the same
+  // stacking context, regardless of DOM order — without an explicit
+  // z-index, they'd cover the desktop icons, windows, and phone UI even
+  // though those sit later in the tree. Both sides get explicit z-index
+  // so real content always wins.
   return (
     <div className={className} style={{ background: wallpaper.css }}>
       <div
         aria-hidden
-        className="absolute inset-0 bg-cover bg-center opacity-70 blur-2xl scale-110"
+        className="absolute inset-0 z-0 bg-cover bg-center opacity-70 blur-2xl scale-110"
         style={{ backgroundImage: `url(${wallpaper.image})` }}
       />
       <div
-        className="absolute inset-0 bg-no-repeat bg-center bg-contain"
+        aria-hidden
+        className="absolute inset-0 z-0 bg-no-repeat bg-center bg-contain"
         style={{ backgroundImage: `url(${wallpaper.image})` }}
       />
-      {children}
+      <div className="relative z-10 flex h-full flex-col">{children}</div>
     </div>
   );
 }
