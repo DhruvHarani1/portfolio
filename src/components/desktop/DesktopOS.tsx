@@ -91,7 +91,11 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
   return (
     <div
       className="fixed inset-0 overflow-hidden bg-cover bg-center"
-      style={{ background: wallpaper.css }}
+      style={
+        wallpaper.image
+          ? { backgroundImage: `url(${wallpaper.image})` }
+          : { background: wallpaper.css }
+      }
     >
       {/* Desktop icons */}
       {!isMobile && (

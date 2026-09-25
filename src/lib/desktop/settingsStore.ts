@@ -1,7 +1,20 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export const WALLPAPERS = [
+export interface Wallpaper {
+  id: string;
+  label: string;
+  css: string;
+  image?: string;
+}
+
+export const WALLPAPERS: Wallpaper[] = [
+  {
+    id: "zootopia",
+    label: "Zootopia",
+    css: "linear-gradient(135deg, #2c5364, #203a43)",
+    image: "/wallpapers/zootopia.jpg",
+  },
   { id: "aurora", label: "Aurora", css: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)" },
   { id: "sunset", label: "Sunset", css: "linear-gradient(135deg, #1a0a2e, #2d1b69, #4a2c8a)" },
   { id: "mint", label: "Mint", css: "linear-gradient(135deg, #0d1117, #0f3d2e, #145c46)" },
@@ -16,7 +29,7 @@ interface SettingsStore {
 export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set) => ({
-      wallpaperId: "aurora",
+      wallpaperId: "zootopia",
       setWallpaper: (id) => set({ wallpaperId: id }),
     }),
     { name: "dh-desktop-settings" }

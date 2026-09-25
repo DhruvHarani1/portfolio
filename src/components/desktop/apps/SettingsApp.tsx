@@ -13,12 +13,16 @@ export default function SettingsApp() {
           <button
             key={wp.id}
             onClick={() => setWallpaper(wp.id)}
-            className={`h-20 rounded-lg border-2 transition-all ${
+            className={`h-20 rounded-lg border-2 bg-cover bg-center transition-all ${
               wallpaperId === wp.id
                 ? "border-link-blue"
                 : "border-transparent hover:border-white/20"
             }`}
-            style={{ background: wp.css }}
+            style={
+              wp.image
+                ? { backgroundImage: `url(${wp.image})` }
+                : { background: wp.css }
+            }
             aria-label={wp.label}
           />
         ))}
