@@ -1,14 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
+import { isImmersiveRoute } from "@/lib/isImmersiveRoute";
 
 /**
  * Buttery inertia-based smooth scrolling, wired to native anchor links.
  * Disabled automatically when the user prefers reduced motion.
  */
 export default function SmoothScroll() {
+  const pathname = usePathname();
+
   useEffect(() => {
+    if (isImmersiveRoute(pathname)) return;
+
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
@@ -49,7 +55,7 @@ export default function SmoothScroll() {
       cancelAnimationFrame(rafId);
       lenis.destroy();
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }

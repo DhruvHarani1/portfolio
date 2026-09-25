@@ -94,6 +94,17 @@ export default function Header() {
             })}
           </ul>
 
+          {/* Desktop OS entry point */}
+          <Link
+            href="/desktop"
+            className="hidden items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-text-primary transition-all hover:border-link-blue/30 hover:bg-link-blue/10 md:flex"
+          >
+            Enter Desktop
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </Link>
+
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -140,6 +151,13 @@ export default function Header() {
               {item.label}
             </a>
           ))}
+          <Link
+            href="/desktop"
+            onClick={() => setMobileOpen(false)}
+            className="mt-2 rounded-full border border-white/10 bg-white/5 px-6 py-2.5 text-lg font-semibold text-text-primary"
+          >
+            Enter Desktop ↗
+          </Link>
         </nav>
       </div>
     </>

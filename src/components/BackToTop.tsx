@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { isImmersiveRoute } from "@/lib/isImmersiveRoute";
 
 interface LenisLike {
   scrollTo: (target: number, opts?: { duration?: number }) => void;
 }
 
 export default function BackToTop() {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -26,6 +29,8 @@ export default function BackToTop() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }
+
+  if (isImmersiveRoute(pathname)) return null;
 
   return (
     <button

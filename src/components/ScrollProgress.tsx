@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { isImmersiveRoute } from "@/lib/isImmersiveRoute";
 
 export default function ScrollProgress() {
+  const pathname = usePathname();
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -20,6 +23,8 @@ export default function ScrollProgress() {
       window.removeEventListener("resize", onScroll);
     };
   }, []);
+
+  if (isImmersiveRoute(pathname)) return null;
 
   return (
     <div className="pointer-events-none fixed left-0 top-0 z-[60] h-[2px] w-full bg-transparent">

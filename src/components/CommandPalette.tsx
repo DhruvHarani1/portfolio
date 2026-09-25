@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
+import { usePathname } from "next/navigation";
+import { isImmersiveRoute } from "@/lib/isImmersiveRoute";
 
 interface Command {
   label: string;
@@ -13,6 +15,7 @@ interface LenisLike {
 }
 
 export default function CommandPalette() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -110,6 +113,8 @@ export default function CommandPalette() {
       }
     }
   }
+
+  if (isImmersiveRoute(pathname)) return null;
 
   return (
     <>
