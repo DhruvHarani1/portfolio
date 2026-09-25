@@ -206,6 +206,95 @@ export async function fetchRepoLanguages(
   }
 }
 
+export interface ContributionDay {
+  date: string;
+  count: number;
+  level: number; // 0-4, matching GitHub's intensity buckets
+}
+
+export interface ContributionCalendar {
+  totalContributions: number;
+  weeks: ContributionDay[][];
+}
+
+/**
+ * Fetch the last-year contribution calendar via GitHub's GraphQL API.
+ * REST has no equivalent endpoint, and GraphQL requires an authenticated
+ * request, so this silently returns null when GITHUB_TOKEN isn't set.
+ */
+export async function fetchContributions(): Promise<ContributionCalendar | null> {
+  if (!process.env.GITHUB_TOKEN) return null;
+
+  const query = `
+    query($userName: String!) {
+      user(login: $userName) {
+        contributionsCollection {
+          contributionCalendar {
+            totalContributions
+            weeks {
+              contributionDays {
+                date
+                contributionCount
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const res = await fetch("https://api.github.com/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query, variables: { userName: GITHUB_USER } }),
+      next: { revalidate: 3600 },
+    });
+
+    if (!res.ok) {
+      console.error(`GitHub GraphQL error: ${res.status} ${res.statusText}`);
+      return null;
+    }
+
+    const json = await res.json();
+    const calendar =
+      json?.data?.user?.contributionsCollection?.contributionCalendar;
+    if (!calendar) return null;
+
+    const counts: number[] = calendar.weeks.flatMap(
+      (w: { contributionDays: { contributionCount: number }[] }) =>
+        w.contributionDays.map((d) => d.contributionCount)
+    );
+    const max = Math.max(1, ...counts);
+
+    function levelFor(count: number): number {
+      if (count === 0) return 0;
+      const ratio = count / max;
+      if (ratio > 0.75) return 4;
+      if (ratio > 0.5) return 3;
+      if (ratio > 0.25) return 2;
+      return 1;
+    }
+
+    const weeks: ContributionDay[][] = calendar.weeks.map(
+      (w: { contributionDays: { date: string; contributionCount: number }[] }) =>
+        w.contributionDays.map((d) => ({
+          date: d.date,
+          count: d.contributionCount,
+          level: levelFor(d.contributionCount),
+        }))
+    );
+
+    return { totalContributions: calendar.totalContributions, weeks };
+  } catch (error) {
+    console.error("Failed to fetch contributions:", error);
+    return null;
+  }
+}
+
 /**
  * Strip badges, shields, install instructions, and license boilerplate from README
  */
