@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useWindowStore } from "@/lib/desktop/windowStore";
 import { WALLPAPERS, useSettingsStore } from "@/lib/desktop/settingsStore";
-import { APPS, getApp } from "@/lib/desktop/apps";
+import { APPS } from "@/lib/desktop/apps";
+import { useDeviceType } from "@/lib/desktop/useDeviceType";
 import type { GitHubRepo } from "@/lib/github";
 import BootScreen from "./BootScreen";
 import Taskbar from "./Taskbar";
 import Window from "./Window";
 import AppIconTile from "./AppIconTile";
+import PhoneStatusBar from "./mobile/PhoneStatusBar";
+import PhoneHomeScreen from "./mobile/PhoneHomeScreen";
+import PhoneNavBar from "./mobile/PhoneNavBar";
 import GalleryApp from "./apps/GalleryApp";
 import MessagesApp from "./apps/MessagesApp";
 import MailApp from "./apps/MailApp";
@@ -22,28 +26,21 @@ interface DesktopOSProps {
   repos: GitHubRepo[];
 }
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return isMobile;
-}
-
 const DESKTOP_ICON_IDS: AppId[] = ["resume", "notes"];
 
 export default function DesktopOS({ repos }: DesktopOSProps) {
   const [booted, setBooted] = useState(false);
+  const [mobileApp, setMobileApp] = useState<AppId | null>(null);
   const { windows, openApp, focusWindow } = useWindowStore();
   const { wallpaperId } = useSettingsStore();
-  const isMobile = useIsMobile();
+  const deviceType = useDeviceType();
+  const isMobile = deviceType !== "desktop";
 
   const wallpaper =
     WALLPAPERS.find((w) => w.id === wallpaperId) ?? WALLPAPERS[0];
+  const wallpaperStyle = wallpaper.image
+    ? { backgroundImage: `url(${wallpaper.image})` }
+    : { background: wallpaper.css };
 
   function handleIconOpen(appId: AppId) {
     const existing = windows.find((w) => w.appId === appId);
@@ -51,15 +48,13 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
       focusWindow(existing.id);
       return;
     }
-    const defaultSize = getApp(appId).defaultSize;
-    const rect: Rect = isMobile
-      ? { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight - 48 }
-      : {
-          x: window.innerWidth / 2 - defaultSize.width / 2,
-          y: Math.max(24, window.innerHeight / 2 - defaultSize.height / 2 - 40),
-          width: Math.min(defaultSize.width, window.innerWidth - 80),
-          height: Math.min(defaultSize.height, window.innerHeight - 160),
-        };
+    const defaultSize = APPS.find((a) => a.id === appId)!.defaultSize;
+    const rect: Rect = {
+      x: window.innerWidth / 2 - defaultSize.width / 2,
+      y: Math.max(24, window.innerHeight / 2 - defaultSize.height / 2 - 40),
+      width: Math.min(defaultSize.width, window.innerWidth - 80),
+      height: Math.min(defaultSize.height, window.innerHeight - 160),
+    };
     openApp(appId, rect);
   }
 
@@ -88,44 +83,54 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
     return <BootScreen onDone={() => setBooted(true)} />;
   }
 
+  // Phone shell: iOS or Android home-screen chrome, one app open at a time
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 flex flex-col overflow-hidden bg-cover bg-center" style={wallpaperStyle}>
+        <PhoneStatusBar deviceType={deviceType} />
+        {mobileApp ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 bg-bg-elevated text-text-primary">
+              {renderApp(mobileApp)}
+            </div>
+            <PhoneNavBar deviceType={deviceType} onHome={() => setMobileApp(null)} />
+          </div>
+        ) : (
+          <PhoneHomeScreen deviceType={deviceType} onOpenApp={setMobileApp} />
+        )}
+      </div>
+    );
+  }
+
+  // Desktop shell: Windows 11-style taskbar and floating windows
   return (
-    <div
-      className="fixed inset-0 overflow-hidden bg-cover bg-center"
-      style={
-        wallpaper.image
-          ? { backgroundImage: `url(${wallpaper.image})` }
-          : { background: wallpaper.css }
-      }
-    >
-      {/* Desktop icons */}
-      {!isMobile && (
-        <div className="absolute left-3 top-3 flex flex-col gap-1">
-          {DESKTOP_ICON_IDS.map((appId) => {
-            const app = APPS.find((a) => a.id === appId)!;
-            return (
-              <button
-                key={appId}
-                onDoubleClick={() => handleIconOpen(appId)}
-                onClick={() => handleIconOpen(appId)}
-                className="flex w-20 flex-col items-center gap-1 rounded p-2 text-center transition-colors hover:bg-white/10 focus:bg-white/15 focus:outline-none"
-              >
-                <AppIconTile icon={app.icon} accent={app.accent} size={38} />
-                <span className="text-[11px] font-medium text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">
-                  {app.name === "Resume" ? "Resume.pdf" : "About Me"}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+    <div className="fixed inset-0 overflow-hidden bg-cover bg-center" style={wallpaperStyle}>
+      <div className="absolute left-3 top-3 flex flex-col gap-1">
+        {DESKTOP_ICON_IDS.map((appId) => {
+          const app = APPS.find((a) => a.id === appId)!;
+          return (
+            <button
+              key={appId}
+              onDoubleClick={() => handleIconOpen(appId)}
+              onClick={() => handleIconOpen(appId)}
+              className="flex w-20 flex-col items-center gap-1 rounded p-2 text-center transition-colors hover:bg-white/10 focus:bg-white/15 focus:outline-none"
+            >
+              <AppIconTile icon={app.icon} accent={app.accent} size={38} />
+              <span className="text-[11px] font-medium text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">
+                {app.name === "Resume" ? "Resume.pdf" : "About Me"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       {windows.map((win) => (
-        <Window key={win.id} win={win} isMobile={isMobile}>
+        <Window key={win.id} win={win}>
           {renderApp(win.appId)}
         </Window>
       ))}
 
-      <Taskbar isMobile={isMobile} />
+      <Taskbar />
     </div>
   );
 }

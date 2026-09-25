@@ -8,11 +8,7 @@ import AppIconTile from "./AppIconTile";
 import StartMenu from "./StartMenu";
 import SystemTray from "./SystemTray";
 
-interface TaskbarProps {
-  isMobile: boolean;
-}
-
-export default function Taskbar({ isMobile }: TaskbarProps) {
+export default function Taskbar() {
   const { windows, openApp, focusWindow, minimizeWindow } = useWindowStore();
   const [startOpen, setStartOpen] = useState(false);
   const cascadeOffset = useRef(0);
@@ -25,12 +21,6 @@ export default function Taskbar({ isMobile }: TaskbarProps) {
       } else {
         minimizeWindow(existing.id);
       }
-      return;
-    }
-
-    if (isMobile) {
-      const rect: Rect = { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight - 48 };
-      openApp(appId, rect);
       return;
     }
 
@@ -54,8 +44,8 @@ export default function Taskbar({ isMobile }: TaskbarProps) {
         />
       )}
       <div className="fixed inset-x-0 bottom-0 z-40 flex h-12 items-center justify-between border-t border-white/10 bg-[#1a1a1a]/75 px-2 backdrop-blur-2xl">
-        {/* Left spacer to balance the centered group (desktop only) */}
-        <div className={isMobile ? "hidden" : "flex-1"} />
+        {/* Left spacer to balance the centered group */}
+        <div className="flex-1" />
 
         <div className="flex items-center gap-1">
           {/* Start button */}

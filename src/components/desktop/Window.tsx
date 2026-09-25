@@ -13,10 +13,9 @@ const TASKBAR_HEIGHT = 48;
 interface WindowProps {
   win: WindowState;
   children: ReactNode;
-  isMobile: boolean;
 }
 
-export default function Window({ win, children, isMobile }: WindowProps) {
+export default function Window({ win, children }: WindowProps) {
   const { closeWindow, focusWindow, minimizeWindow, toggleMaximize, updateRect } =
     useWindowStore();
   const app = getApp(win.appId);
@@ -29,7 +28,7 @@ export default function Window({ win, children, isMobile }: WindowProps) {
   }
 
   function handleTitleMouseDown(e: React.MouseEvent) {
-    if (isMobile || win.maximized) return;
+    if (win.maximized) return;
     focusWindow(win.id);
     dragState.current = {
       startX: e.clientX,
@@ -59,7 +58,7 @@ export default function Window({ win, children, isMobile }: WindowProps) {
   }
 
   function handleResizeMouseDown(e: React.MouseEvent) {
-    if (isMobile || win.maximized) return;
+    if (win.maximized) return;
     e.stopPropagation();
     focusWindow(win.id);
     resizeState.current = {
@@ -106,21 +105,19 @@ export default function Window({ win, children, isMobile }: WindowProps) {
 
   if (win.minimized) return null;
 
-  const style = isMobile
-    ? { top: 0, left: 0, right: 0, bottom: TASKBAR_HEIGHT, position: "fixed" as const }
-    : {
-        left: win.rect.x,
-        top: win.rect.y,
-        width: win.rect.width,
-        height: win.rect.height,
-        position: "fixed" as const,
-      };
+  const style = {
+    left: win.rect.x,
+    top: win.rect.y,
+    width: win.rect.width,
+    height: win.rect.height,
+    position: "fixed" as const,
+  };
 
   return (
     <div
       className={`overflow-hidden rounded-lg border border-white/10 bg-[#202020] shadow-2xl shadow-black/50 ${
         closing ? "animate-[window-close_0.15s_ease-in_forwards]" : "animate-[window-open_0.18s_ease-out]"
-      } ${isMobile ? "rounded-none border-none" : ""}`}
+      }`}
       style={{ ...style, zIndex: win.zIndex }}
       onMouseDown={() => focusWindow(win.id)}
     >
@@ -128,63 +125,48 @@ export default function Window({ win, children, isMobile }: WindowProps) {
         {/* Title bar — Windows 11 style: icon + title left, controls right */}
         <div
           onMouseDown={handleTitleMouseDown}
-          onDoubleClick={() => !isMobile && toggleMaximize(win.id, viewportRect())}
-          className="flex h-9 shrink-0 items-center gap-2 border-b border-white/5 bg-[#2b2b2b] pl-2.5 pr-1 select-none"
-          style={{ cursor: isMobile ? "default" : "grab" }}
+          onDoubleClick={() => toggleMaximize(win.id, viewportRect())}
+          className="flex h-9 shrink-0 cursor-grab items-center gap-2 border-b border-white/5 bg-[#2b2b2b] pl-2.5 pr-1 select-none"
         >
-          {isMobile ? (
-            <button
-              onClick={handleClose}
-              className="flex items-center gap-1 py-1 text-sm text-link-blue"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
-          ) : (
-            <div className="h-4 w-4 shrink-0">
-              <AppIconTile icon={app.icon} accent={app.accent} size={16} />
-            </div>
-          )}
+          <div className="h-4 w-4 shrink-0">
+            <AppIconTile icon={app.icon} accent={app.accent} size={16} />
+          </div>
           <span className="flex-1 truncate text-xs font-medium text-white/80">
             {app.name}
           </span>
 
-          {!isMobile && (
-            <div className="flex h-full items-center">
-              <button
-                onClick={() => minimizeWindow(win.id)}
-                aria-label="Minimize"
-                className="flex h-9 w-11 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <svg width="10" height="10" viewBox="0 0 10 10"><rect y="4.5" width="10" height="1" fill="currentColor" /></svg>
-              </button>
-              <button
-                onClick={() => toggleMaximize(win.id, viewportRect())}
-                aria-label="Maximize"
-                className="flex h-9 w-11 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <svg width="10" height="10" viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" /></svg>
-              </button>
-              <button
-                onClick={handleClose}
-                aria-label="Close"
-                className="flex h-9 w-11 items-center justify-center text-white/70 transition-colors hover:bg-[#e81123] hover:text-white"
-              >
-                <svg width="10" height="10" viewBox="0 0 10 10">
-                  <path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" strokeWidth="1" />
-                </svg>
-              </button>
-            </div>
-          )}
+          <div className="flex h-full items-center">
+            <button
+              onClick={() => minimizeWindow(win.id)}
+              aria-label="Minimize"
+              className="flex h-9 w-11 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10"><rect y="4.5" width="10" height="1" fill="currentColor" /></svg>
+            </button>
+            <button
+              onClick={() => toggleMaximize(win.id, viewportRect())}
+              aria-label="Maximize"
+              className="flex h-9 w-11 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" /></svg>
+            </button>
+            <button
+              onClick={handleClose}
+              aria-label="Close"
+              className="flex h-9 w-11 items-center justify-center text-white/70 transition-colors hover:bg-[#e81123] hover:text-white"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10">
+                <path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" strokeWidth="1" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
         <div className="min-h-0 flex-1 text-text-primary">{children}</div>
       </div>
 
-      {!isMobile && !win.maximized && (
+      {!win.maximized && (
         <div
           onMouseDown={handleResizeMouseDown}
           className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize"
