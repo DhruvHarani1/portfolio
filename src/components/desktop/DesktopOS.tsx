@@ -5,12 +5,16 @@ import { useWindowStore } from "@/lib/desktop/windowStore";
 import { WALLPAPERS, useSettingsStore } from "@/lib/desktop/settingsStore";
 import { APPS } from "@/lib/desktop/apps";
 import { useDeviceType } from "@/lib/desktop/useDeviceType";
+import { useContextMenu } from "@/lib/desktop/useContextMenu";
+import { playBootChime } from "@/lib/desktop/sound";
 import type { GitHubRepo } from "@/lib/github";
 import BootScreen from "./BootScreen";
+import LockScreen from "./LockScreen";
 import Taskbar from "./Taskbar";
 import Window from "./Window";
 import AppIconTile from "./AppIconTile";
 import WallpaperBackground from "./WallpaperBackground";
+import ContextMenu from "./ContextMenu";
 import PhoneStatusBar from "./mobile/PhoneStatusBar";
 import PhoneHomeScreen from "./mobile/PhoneHomeScreen";
 import PhoneNavBar from "./mobile/PhoneNavBar";
@@ -27,21 +31,30 @@ interface DesktopOSProps {
   repos: GitHubRepo[];
 }
 
+type Stage = "booting" | "locked" | "unlocked";
+
 const DESKTOP_ICON_IDS: AppId[] = ["resume", "notes"];
 
 export default function DesktopOS({ repos }: DesktopOSProps) {
-  const [booted, setBooted] = useState(false);
+  const [stage, setStage] = useState<Stage>("booting");
   const [mobileApp, setMobileApp] = useState<AppId | null>(null);
-  const { windows, openApp, focusWindow } = useWindowStore();
-  const { wallpaperId } = useSettingsStore();
+  const { windows, openApp, focusWindow, closeWindow, snapPreview } = useWindowStore();
+  const { wallpaperId, soundEnabled } = useSettingsStore();
   const deviceType = useDeviceType();
   const isMobile = deviceType !== "desktop";
+  const desktopMenu = useContextMenu();
+  const iconMenu = useContextMenu();
 
   const wallpaper =
     WALLPAPERS.find((w) => w.id === wallpaperId) ?? WALLPAPERS[0];
   const mobileWallpaper = wallpaper.mobileImage
     ? { ...wallpaper, image: wallpaper.mobileImage }
     : wallpaper;
+
+  function handleUnlock() {
+    if (soundEnabled) playBootChime();
+    setStage("unlocked");
+  }
 
   function handleIconOpen(appId: AppId) {
     const existing = windows.find((w) => w.appId === appId);
@@ -80,8 +93,12 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
     }
   }
 
-  if (!booted) {
-    return <BootScreen onDone={() => setBooted(true)} />;
+  if (stage === "booting") {
+    return <BootScreen onDone={() => setStage("locked")} />;
+  }
+
+  if (stage === "locked") {
+    return <LockScreen wallpaper={wallpaper} onUnlock={handleUnlock} />;
   }
 
   // Phone shell: iOS or Android home-screen chrome, one app open at a time
@@ -105,7 +122,41 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
 
   // Desktop shell: Windows 11-style taskbar and floating windows
   return (
-    <WallpaperBackground wallpaper={wallpaper} className="fixed inset-0 overflow-hidden">
+    <WallpaperBackground
+      wallpaper={wallpaper}
+      className="fixed inset-0 overflow-hidden"
+    >
+      <div
+        className="absolute inset-0"
+        onContextMenu={(e) =>
+          desktopMenu.open(e, [
+            {
+              label: "Refresh",
+              onClick: () => {},
+              icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+              ),
+            },
+            {
+              label: "Personalize",
+              onClick: () => handleIconOpen("settings"),
+              icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+                </svg>
+              ),
+            },
+            {
+              label: "Display settings",
+              onClick: () => handleIconOpen("settings"),
+              separatorBefore: true,
+            },
+          ])
+        }
+      />
+
       <div className="absolute left-3 top-3 flex flex-col gap-1">
         {DESKTOP_ICON_IDS.map((appId) => {
           const app = APPS.find((a) => a.id === appId)!;
@@ -114,6 +165,16 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
               key={appId}
               onDoubleClick={() => handleIconOpen(appId)}
               onClick={() => handleIconOpen(appId)}
+              onContextMenu={(e) =>
+                iconMenu.open(e, [
+                  { label: "Open", onClick: () => handleIconOpen(appId) },
+                  {
+                    label: "Properties",
+                    onClick: () => handleIconOpen("settings"),
+                    separatorBefore: true,
+                  },
+                ])
+              }
               className="flex w-20 flex-col items-center gap-1 rounded p-2 text-center transition-colors hover:bg-white/10 focus:bg-white/15 focus:outline-none"
             >
               <AppIconTile icon={app.icon} accent={app.accent} size={38} />
@@ -125,13 +186,56 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
         })}
       </div>
 
+      {snapPreview && (
+        <div
+          className="pointer-events-none fixed z-[60] rounded-lg border-2 border-link-blue bg-link-blue/20 transition-all duration-100"
+          style={{
+            left: snapPreview.x,
+            top: snapPreview.y,
+            width: snapPreview.width,
+            height: snapPreview.height,
+          }}
+        />
+      )}
+
       {windows.map((win) => (
-        <Window key={win.id} win={win}>
+        <Window
+          key={win.id}
+          win={win}
+          onContextMenu={(e) =>
+            iconMenu.open(e, [
+              { label: "Restore/Open", onClick: () => focusWindow(win.id) },
+              {
+                label: "Close window",
+                onClick: () => closeWindow(win.id),
+                danger: true,
+                separatorBefore: true,
+              },
+            ])
+          }
+        >
           {renderApp(win.appId)}
         </Window>
       ))}
 
       <Taskbar />
+
+      {desktopMenu.menu && (
+        <ContextMenu
+          x={desktopMenu.menu.x}
+          y={desktopMenu.menu.y}
+          items={desktopMenu.menu.items}
+          onClose={desktopMenu.close}
+        />
+      )}
+      {iconMenu.menu && (
+        <ContextMenu
+          x={iconMenu.menu.x}
+          y={iconMenu.menu.y}
+          items={iconMenu.menu.items}
+          onClose={iconMenu.close}
+        />
+      )}
     </WallpaperBackground>
   );
 }

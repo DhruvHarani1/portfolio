@@ -1,15 +1,20 @@
 import { create } from "zustand";
 import type { AppId, Rect, WindowState } from "./types";
 
+export type SnapZone = "left" | "right" | "maximize" | null;
+
 interface WindowStore {
   windows: WindowState[];
   topZ: number;
+  snapPreview: Rect | null;
+  snapZone: SnapZone;
   openApp: (appId: AppId, defaultRect: Rect) => void;
   closeWindow: (id: string) => void;
   focusWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
   toggleMaximize: (id: string, viewport: Rect) => void;
   updateRect: (id: string, rect: Rect) => void;
+  setSnapPreview: (rect: Rect | null, zone: SnapZone) => void;
   isOpen: (appId: AppId) => boolean;
 }
 
@@ -18,6 +23,8 @@ let idCounter = 0;
 export const useWindowStore = create<WindowStore>((set, get) => ({
   windows: [],
   topZ: 10,
+  snapPreview: null,
+  snapZone: null,
 
   openApp: (appId, defaultRect) => {
     const existing = get().windows.find((w) => w.appId === appId);
@@ -96,6 +103,8 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     set((state) => ({
       windows: state.windows.map((w) => (w.id === id ? { ...w, rect } : w)),
     })),
+
+  setSnapPreview: (rect, zone) => set({ snapPreview: rect, snapZone: zone }),
 
   isOpen: (appId) => get().windows.some((w) => w.appId === appId),
 }));

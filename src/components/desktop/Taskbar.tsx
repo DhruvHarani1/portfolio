@@ -3,15 +3,18 @@
 import { useRef, useState } from "react";
 import { APPS } from "@/lib/desktop/apps";
 import { useWindowStore } from "@/lib/desktop/windowStore";
+import { useContextMenu } from "@/lib/desktop/useContextMenu";
 import type { AppId, Rect } from "@/lib/desktop/types";
 import AppIconTile from "./AppIconTile";
 import StartMenu from "./StartMenu";
 import SystemTray from "./SystemTray";
+import ContextMenu from "./ContextMenu";
 
 export default function Taskbar() {
-  const { windows, openApp, focusWindow, minimizeWindow } = useWindowStore();
+  const { windows, openApp, focusWindow, minimizeWindow, closeWindow } = useWindowStore();
   const [startOpen, setStartOpen] = useState(false);
   const cascadeOffset = useRef(0);
+  const menu = useContextMenu();
 
   function handleOpen(appId: AppId, defaultSize: { width: number; height: number }) {
     const existing = windows.find((w) => w.appId === appId);
@@ -77,6 +80,22 @@ export default function Taskbar() {
               <button
                 key={app.id}
                 onClick={() => handleOpen(app.id, app.defaultSize)}
+                onContextMenu={(e) =>
+                  menu.open(
+                    e,
+                    isRunning
+                      ? [
+                          { label: "Open", onClick: () => focusWindow(win!.id) },
+                          {
+                            label: "Close window",
+                            onClick: () => closeWindow(win!.id),
+                            danger: true,
+                            separatorBefore: true,
+                          },
+                        ]
+                      : [{ label: "Open", onClick: () => handleOpen(app.id, app.defaultSize) }]
+                  )
+                }
                 aria-label={`Open ${app.name}`}
                 className={`group relative flex h-9 w-11 items-center justify-center rounded-md transition-colors ${
                   isFocused ? "bg-white/15" : "hover:bg-white/10"
@@ -102,6 +121,10 @@ export default function Taskbar() {
           <SystemTray />
         </div>
       </div>
+
+      {menu.menu && (
+        <ContextMenu x={menu.menu.x} y={menu.menu.y} items={menu.menu.items} onClose={menu.close} />
+      )}
     </>
   );
 }

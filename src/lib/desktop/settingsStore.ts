@@ -27,6 +27,8 @@ export const WALLPAPERS: Wallpaper[] = [
 interface SettingsStore {
   wallpaperId: string;
   setWallpaper: (id: string) => void;
+  soundEnabled: boolean;
+  toggleSound: () => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -34,6 +36,8 @@ export const useSettingsStore = create<SettingsStore>()(
     (set) => ({
       wallpaperId: "zootopia",
       setWallpaper: (id) => set({ wallpaperId: id }),
+      soundEnabled: true,
+      toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
     }),
     { name: "dh-desktop-settings" }
   )

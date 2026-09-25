@@ -13,11 +13,21 @@ const TASKBAR_HEIGHT = 48;
 interface WindowProps {
   win: WindowState;
   children: ReactNode;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-export default function Window({ win, children }: WindowProps) {
-  const { closeWindow, focusWindow, minimizeWindow, toggleMaximize, updateRect } =
-    useWindowStore();
+const SNAP_EDGE_PX = 24;
+const SNAP_TOP_PX = 8;
+
+export default function Window({ win, children, onContextMenu }: WindowProps) {
+  const {
+    closeWindow,
+    focusWindow,
+    minimizeWindow,
+    toggleMaximize,
+    updateRect,
+    setSnapPreview,
+  } = useWindowStore();
   const app = getApp(win.appId);
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const resizeState = useRef<{ startX: number; startY: number; origW: number; origH: number } | null>(null);
@@ -49,12 +59,30 @@ export default function Window({ win, children }: WindowProps) {
       x: Math.max(0, dragState.current.origX + dx),
       y: Math.max(0, dragState.current.origY + dy),
     });
+
+    const vw = window.innerWidth;
+    const viewport = viewportRect();
+    if (e.clientY <= SNAP_TOP_PX) {
+      setSnapPreview(viewport, "maximize");
+    } else if (e.clientX <= SNAP_EDGE_PX) {
+      setSnapPreview({ x: 0, y: 0, width: vw / 2, height: viewport.height }, "left");
+    } else if (e.clientX >= vw - SNAP_EDGE_PX) {
+      setSnapPreview({ x: vw / 2, y: 0, width: vw / 2, height: viewport.height }, "right");
+    } else {
+      setSnapPreview(null, null);
+    }
   }
 
   function handleDragEnd() {
     dragState.current = null;
     window.removeEventListener("mousemove", handleDragMove);
     window.removeEventListener("mouseup", handleDragEnd);
+
+    const { snapPreview } = useWindowStore.getState();
+    if (snapPreview) {
+      updateRect(win.id, snapPreview);
+      setSnapPreview(null, null);
+    }
   }
 
   function handleResizeMouseDown(e: React.MouseEvent) {
@@ -126,6 +154,7 @@ export default function Window({ win, children }: WindowProps) {
         <div
           onMouseDown={handleTitleMouseDown}
           onDoubleClick={() => toggleMaximize(win.id, viewportRect())}
+          onContextMenu={onContextMenu}
           className="flex h-9 shrink-0 cursor-grab items-center gap-2 border-b border-white/5 bg-[#2b2b2b] pl-2.5 pr-1 select-none"
         >
           <div className="h-4 w-4 shrink-0">
