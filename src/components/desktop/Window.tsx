@@ -4,9 +4,11 @@ import { useRef, useState, useEffect, ReactNode } from "react";
 import { useWindowStore } from "@/lib/desktop/windowStore";
 import type { WindowState } from "@/lib/desktop/types";
 import { getApp } from "@/lib/desktop/apps";
+import AppIconTile from "./AppIconTile";
 
 const MIN_WIDTH = 320;
 const MIN_HEIGHT = 260;
+const TASKBAR_HEIGHT = 48;
 
 interface WindowProps {
   win: WindowState;
@@ -23,7 +25,7 @@ export default function Window({ win, children, isMobile }: WindowProps) {
   const [closing, setClosing] = useState(false);
 
   function viewportRect() {
-    return { x: 0, y: 28, width: window.innerWidth, height: window.innerHeight - 28 - 88 };
+    return { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight - TASKBAR_HEIGHT };
   }
 
   function handleTitleMouseDown(e: React.MouseEvent) {
@@ -46,7 +48,7 @@ export default function Window({ win, children, isMobile }: WindowProps) {
     updateRect(win.id, {
       ...win.rect,
       x: Math.max(0, dragState.current.origX + dx),
-      y: Math.max(28, dragState.current.origY + dy),
+      y: Math.max(0, dragState.current.origY + dy),
     });
   }
 
@@ -105,7 +107,7 @@ export default function Window({ win, children, isMobile }: WindowProps) {
   if (win.minimized) return null;
 
   const style = isMobile
-    ? { top: 28, left: 0, right: 0, bottom: 0, position: "fixed" as const }
+    ? { top: 0, left: 0, right: 0, bottom: TASKBAR_HEIGHT, position: "fixed" as const }
     : {
         left: win.rect.x,
         top: win.rect.y,
@@ -116,54 +118,66 @@ export default function Window({ win, children, isMobile }: WindowProps) {
 
   return (
     <div
-      className={`overflow-hidden rounded-xl border border-white/10 bg-bg-elevated shadow-2xl shadow-black/50 ${
+      className={`overflow-hidden rounded-lg border border-white/10 bg-[#202020] shadow-2xl shadow-black/50 ${
         closing ? "animate-[window-close_0.15s_ease-in_forwards]" : "animate-[window-open_0.18s_ease-out]"
       } ${isMobile ? "rounded-none border-none" : ""}`}
       style={{ ...style, zIndex: win.zIndex }}
       onMouseDown={() => focusWindow(win.id)}
     >
       <div className="flex h-full flex-col">
-        {/* Title bar */}
+        {/* Title bar — Windows 11 style: icon + title left, controls right */}
         <div
           onMouseDown={handleTitleMouseDown}
           onDoubleClick={() => !isMobile && toggleMaximize(win.id, viewportRect())}
-          className="flex shrink-0 items-center gap-2 border-b border-white/5 bg-white/[0.03] px-3 py-2.5 select-none"
+          className="flex h-9 shrink-0 items-center gap-2 border-b border-white/5 bg-[#2b2b2b] pl-2.5 pr-1 select-none"
           style={{ cursor: isMobile ? "default" : "grab" }}
         >
-          {!isMobile && (
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={handleClose}
-                aria-label="Close"
-                className="h-3 w-3 rounded-full bg-[#FF5F57] transition-opacity hover:opacity-80"
-              />
-              <button
-                onClick={() => minimizeWindow(win.id)}
-                aria-label="Minimize"
-                className="h-3 w-3 rounded-full bg-[#FEBC2E] transition-opacity hover:opacity-80"
-              />
-              <button
-                onClick={() => toggleMaximize(win.id, viewportRect())}
-                aria-label="Maximize"
-                className="h-3 w-3 rounded-full bg-[#28C840] transition-opacity hover:opacity-80"
-              />
-            </div>
-          )}
-          {isMobile && (
+          {isMobile ? (
             <button
               onClick={handleClose}
-              className="flex items-center gap-1 text-sm text-link-blue"
+              className="flex items-center gap-1 py-1 text-sm text-link-blue"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
               Back
             </button>
+          ) : (
+            <div className="h-4 w-4 shrink-0">
+              <AppIconTile icon={app.icon} accent={app.accent} size={16} />
+            </div>
           )}
-          <span className="flex-1 text-center text-xs font-medium text-text-secondary">
+          <span className="flex-1 truncate text-xs font-medium text-white/80">
             {app.name}
           </span>
-          {!isMobile && <div className="w-[52px]" />}
+
+          {!isMobile && (
+            <div className="flex h-full items-center">
+              <button
+                onClick={() => minimizeWindow(win.id)}
+                aria-label="Minimize"
+                className="flex h-9 w-11 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10"><rect y="4.5" width="10" height="1" fill="currentColor" /></svg>
+              </button>
+              <button
+                onClick={() => toggleMaximize(win.id, viewportRect())}
+                aria-label="Maximize"
+                className="flex h-9 w-11 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" /></svg>
+              </button>
+              <button
+                onClick={handleClose}
+                aria-label="Close"
+                className="flex h-9 w-11 items-center justify-center text-white/70 transition-colors hover:bg-[#e81123] hover:text-white"
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                  <path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" strokeWidth="1" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Content */}

@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useWindowStore } from "@/lib/desktop/windowStore";
 import { WALLPAPERS, useSettingsStore } from "@/lib/desktop/settingsStore";
+import { APPS, getApp } from "@/lib/desktop/apps";
 import type { GitHubRepo } from "@/lib/github";
 import BootScreen from "./BootScreen";
-import MenuBar from "./MenuBar";
-import Dock from "./Dock";
+import Taskbar from "./Taskbar";
 import Window from "./Window";
+import AppIconTile from "./AppIconTile";
 import GalleryApp from "./apps/GalleryApp";
 import MessagesApp from "./apps/MessagesApp";
 import MailApp from "./apps/MailApp";
@@ -33,10 +34,7 @@ function useIsMobile() {
   return isMobile;
 }
 
-const DESKTOP_ICONS: { appId: AppId; label: string; emoji: string }[] = [
-  { appId: "resume", label: "Resume.pdf", emoji: "📄" },
-  { appId: "notes", label: "About Me", emoji: "📝" },
-];
+const DESKTOP_ICON_IDS: AppId[] = ["resume", "notes"];
 
 export default function DesktopOS({ repos }: DesktopOSProps) {
   const [booted, setBooted] = useState(false);
@@ -53,9 +51,15 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
       focusWindow(existing.id);
       return;
     }
+    const defaultSize = getApp(appId).defaultSize;
     const rect: Rect = isMobile
-      ? { x: 0, y: 28, width: window.innerWidth, height: window.innerHeight - 28 }
-      : { x: window.innerWidth / 2 - 300, y: 100, width: 600, height: 620 };
+      ? { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight - 48 }
+      : {
+          x: window.innerWidth / 2 - defaultSize.width / 2,
+          y: Math.max(24, window.innerHeight / 2 - defaultSize.height / 2 - 40),
+          width: Math.min(defaultSize.width, window.innerWidth - 80),
+          height: Math.min(defaultSize.height, window.innerHeight - 160),
+        };
     openApp(appId, rect);
   }
 
@@ -86,27 +90,28 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
 
   return (
     <div
-      className="fixed inset-0 overflow-hidden"
+      className="fixed inset-0 overflow-hidden bg-cover bg-center"
       style={{ background: wallpaper.css }}
     >
-      <MenuBar />
-
       {/* Desktop icons */}
       {!isMobile && (
-        <div className="absolute left-4 top-10 flex flex-col gap-4">
-          {DESKTOP_ICONS.map((icon) => (
-            <button
-              key={icon.appId}
-              onDoubleClick={() => handleIconOpen(icon.appId)}
-              onClick={() => handleIconOpen(icon.appId)}
-              className="flex w-20 flex-col items-center gap-1 rounded-lg p-2 text-center transition-colors hover:bg-white/10"
-            >
-              <span className="text-3xl drop-shadow">{icon.emoji}</span>
-              <span className="text-[11px] font-medium text-white drop-shadow">
-                {icon.label}
-              </span>
-            </button>
-          ))}
+        <div className="absolute left-3 top-3 flex flex-col gap-1">
+          {DESKTOP_ICON_IDS.map((appId) => {
+            const app = APPS.find((a) => a.id === appId)!;
+            return (
+              <button
+                key={appId}
+                onDoubleClick={() => handleIconOpen(appId)}
+                onClick={() => handleIconOpen(appId)}
+                className="flex w-20 flex-col items-center gap-1 rounded p-2 text-center transition-colors hover:bg-white/10 focus:bg-white/15 focus:outline-none"
+              >
+                <AppIconTile icon={app.icon} accent={app.accent} size={38} />
+                <span className="text-[11px] font-medium text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">
+                  {app.name === "Resume" ? "Resume.pdf" : "About Me"}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -116,7 +121,7 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
         </Window>
       ))}
 
-      <Dock isMobile={isMobile} />
+      <Taskbar isMobile={isMobile} />
     </div>
   );
 }
