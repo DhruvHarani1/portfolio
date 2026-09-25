@@ -6,6 +6,8 @@ export interface Wallpaper {
   label: string;
   css: string;
   image?: string;
+  /** Optional portrait-cropped variant used on the phone shell instead of `image`. */
+  mobileImage?: string;
 }
 
 export const WALLPAPERS: Wallpaper[] = [

@@ -10,6 +10,7 @@ import BootScreen from "./BootScreen";
 import Taskbar from "./Taskbar";
 import Window from "./Window";
 import AppIconTile from "./AppIconTile";
+import WallpaperBackground from "./WallpaperBackground";
 import PhoneStatusBar from "./mobile/PhoneStatusBar";
 import PhoneHomeScreen from "./mobile/PhoneHomeScreen";
 import PhoneNavBar from "./mobile/PhoneNavBar";
@@ -38,9 +39,9 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
 
   const wallpaper =
     WALLPAPERS.find((w) => w.id === wallpaperId) ?? WALLPAPERS[0];
-  const wallpaperStyle = wallpaper.image
-    ? { backgroundImage: `url(${wallpaper.image})` }
-    : { background: wallpaper.css };
+  const mobileWallpaper = wallpaper.mobileImage
+    ? { ...wallpaper, image: wallpaper.mobileImage }
+    : wallpaper;
 
   function handleIconOpen(appId: AppId) {
     const existing = windows.find((w) => w.appId === appId);
@@ -86,7 +87,7 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
   // Phone shell: iOS or Android home-screen chrome, one app open at a time
   if (isMobile) {
     return (
-      <div className="fixed inset-0 flex flex-col overflow-hidden bg-cover bg-center" style={wallpaperStyle}>
+      <WallpaperBackground wallpaper={mobileWallpaper} className="fixed inset-0 flex flex-col overflow-hidden">
         <PhoneStatusBar deviceType={deviceType} />
         {mobileApp ? (
           <div className="flex min-h-0 flex-1 flex-col">
@@ -98,13 +99,13 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
         ) : (
           <PhoneHomeScreen deviceType={deviceType} onOpenApp={setMobileApp} />
         )}
-      </div>
+      </WallpaperBackground>
     );
   }
 
   // Desktop shell: Windows 11-style taskbar and floating windows
   return (
-    <div className="fixed inset-0 overflow-hidden bg-cover bg-center" style={wallpaperStyle}>
+    <WallpaperBackground wallpaper={wallpaper} className="fixed inset-0 overflow-hidden">
       <div className="absolute left-3 top-3 flex flex-col gap-1">
         {DESKTOP_ICON_IDS.map((appId) => {
           const app = APPS.find((a) => a.id === appId)!;
@@ -131,6 +132,6 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
       ))}
 
       <Taskbar />
-    </div>
+    </WallpaperBackground>
   );
 }
