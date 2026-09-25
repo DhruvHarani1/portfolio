@@ -5,7 +5,11 @@ export type AppId =
   | "notes"
   | "terminal"
   | "resume"
-  | "settings";
+  | "settings"
+  | "explorer"
+  | "browser"
+  | "taskmgr"
+  | "bin";
 
 export interface Rect {
   x: number;

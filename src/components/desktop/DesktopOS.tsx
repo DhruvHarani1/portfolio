@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWindowStore } from "@/lib/desktop/windowStore";
 import { WALLPAPERS, useSettingsStore } from "@/lib/desktop/settingsStore";
 import { APPS } from "@/lib/desktop/apps";
@@ -25,7 +25,12 @@ import NotesApp from "./apps/NotesApp";
 import TerminalApp from "./apps/TerminalApp";
 import ResumeApp from "./apps/ResumeApp";
 import SettingsApp from "./apps/SettingsApp";
-import type { AppId, Rect } from "@/lib/desktop/types";
+import ExplorerApp from "./apps/ExplorerApp";
+import BrowserApp from "./apps/BrowserApp";
+import TaskManagerApp from "./apps/TaskManagerApp";
+import BinApp from "./apps/BinApp";
+import WeatherWidget from "./WeatherWidget";
+import type { AppId } from "@/lib/desktop/types";
 
 interface DesktopOSProps {
   repos: GitHubRepo[];
@@ -33,12 +38,16 @@ interface DesktopOSProps {
 
 type Stage = "booting" | "locked" | "unlocked";
 
-const DESKTOP_ICON_IDS: AppId[] = ["resume", "notes"];
+const DESKTOP_ICON_IDS: AppId[] = ["resume", "notes", "bin"];
+const DESKTOP_ICON_LABELS: Partial<Record<AppId, string>> = {
+  resume: "Resume.pdf",
+  notes: "About Me",
+};
 
 export default function DesktopOS({ repos }: DesktopOSProps) {
   const [stage, setStage] = useState<Stage>("booting");
   const [mobileApp, setMobileApp] = useState<AppId | null>(null);
-  const { windows, openApp, focusWindow, closeWindow, snapPreview } = useWindowStore();
+  const { windows, openAppCentered, focusWindow, closeWindow, snapPreview } = useWindowStore();
   const { wallpaperId, soundEnabled } = useSettingsStore();
   const deviceType = useDeviceType();
   const isMobile = deviceType !== "desktop";
@@ -62,14 +71,7 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
       focusWindow(existing.id);
       return;
     }
-    const defaultSize = APPS.find((a) => a.id === appId)!.defaultSize;
-    const rect: Rect = {
-      x: window.innerWidth / 2 - defaultSize.width / 2,
-      y: Math.max(24, window.innerHeight / 2 - defaultSize.height / 2 - 40),
-      width: Math.min(defaultSize.width, window.innerWidth - 80),
-      height: Math.min(defaultSize.height, window.innerHeight - 160),
-    };
-    openApp(appId, rect);
+    openAppCentered(appId);
   }
 
   function renderApp(appId: AppId) {
@@ -88,10 +90,32 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
         return <ResumeApp />;
       case "settings":
         return <SettingsApp />;
+      case "explorer":
+        return <ExplorerApp />;
+      case "browser":
+        return <BrowserApp />;
+      case "taskmgr":
+        return <TaskManagerApp />;
+      case "bin":
+        return <BinApp />;
       default:
         return null;
     }
   }
+
+  // Ctrl+Alt+Delete opens Task Manager, like a real OS
+  useEffect(() => {
+    if (isMobile) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.altKey && e.key === "Delete") {
+        e.preventDefault();
+        handleIconOpen("taskmgr");
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
 
   if (stage === "booting") {
     return <BootScreen onDone={() => setStage("locked")} />;
@@ -179,11 +203,15 @@ export default function DesktopOS({ repos }: DesktopOSProps) {
             >
               <AppIconTile icon={app.icon} accent={app.accent} size={38} />
               <span className="text-[11px] font-medium text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">
-                {app.name === "Resume" ? "Resume.pdf" : "About Me"}
+                {DESKTOP_ICON_LABELS[appId] ?? app.name}
               </span>
             </button>
           );
         })}
+      </div>
+
+      <div className="absolute right-3 top-3">
+        <WeatherWidget />
       </div>
 
       {snapPreview && (

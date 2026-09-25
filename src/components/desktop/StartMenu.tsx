@@ -14,7 +14,11 @@ interface StartMenuProps {
 export default function StartMenu({ onOpenApp, onClose }: StartMenuProps) {
   const [query, setQuery] = useState("");
 
-  const filtered = APPS.filter((app) =>
+  // Unpinned apps (Task Manager, Recycle Bin) only surface once you search
+  // for them, same as a real Start menu — the default grid stays pinned-only.
+  const searching = query.trim().length > 0;
+  const base = searching ? APPS : APPS.filter((app) => app.pinned !== false);
+  const filtered = base.filter((app) =>
     app.name.toLowerCase().includes(query.toLowerCase())
   );
 
@@ -33,7 +37,9 @@ export default function StartMenu({ onOpenApp, onClose }: StartMenuProps) {
         </div>
 
         <div className="px-4 pb-2">
-          <p className="mb-2 text-xs font-medium text-white/50">Pinned</p>
+          <p className="mb-2 text-xs font-medium text-white/50">
+            {searching ? "Search results" : "Pinned"}
+          </p>
           <div className="grid grid-cols-4 gap-2">
             {filtered.map((app) => (
               <button

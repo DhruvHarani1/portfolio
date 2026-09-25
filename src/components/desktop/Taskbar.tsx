@@ -38,6 +38,12 @@ export default function Taskbar() {
     openApp(appId, rect);
   }
 
+  // Pinned apps always show; unpinned ones (Task Manager, Recycle Bin) only
+  // appear while they have an open window — matching real Windows behavior.
+  const taskbarApps = APPS.filter(
+    (a) => a.pinned !== false || windows.some((w) => w.appId === a.id)
+  );
+
   return (
     <>
       {startOpen && (
@@ -46,7 +52,14 @@ export default function Taskbar() {
           onClose={() => setStartOpen(false)}
         />
       )}
-      <div className="fixed inset-x-0 bottom-0 z-40 flex h-12 items-center justify-between border-t border-white/10 bg-[#1a1a1a]/75 px-2 backdrop-blur-2xl">
+      <div
+        onContextMenu={(e) =>
+          menu.open(e, [
+            { label: "Task Manager", onClick: () => handleOpen("taskmgr", { width: 520, height: 480 }) },
+          ])
+        }
+        className="fixed inset-x-0 bottom-0 z-40 flex h-12 items-center justify-between border-t border-white/10 bg-[#1a1a1a]/75 px-2 backdrop-blur-2xl"
+      >
         {/* Left spacer to balance the centered group */}
         <div className="flex-1" />
 
@@ -68,7 +81,7 @@ export default function Taskbar() {
           </button>
 
           {/* Pinned + running apps */}
-          {APPS.map((app) => {
+          {taskbarApps.map((app) => {
             const win = windows.find((w) => w.appId === app.id);
             const isRunning = !!win;
             const isFocused =

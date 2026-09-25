@@ -7,9 +7,61 @@ export interface AppMeta {
   icon: ReactNode;
   accent: string;
   defaultSize: { width: number; height: number };
+  /** false hides the app from the taskbar/Start menu (still openable directly, e.g. Task Manager via Ctrl+Alt+Del). Defaults to true. */
+  pinned?: boolean;
 }
 
 export const APPS: AppMeta[] = [
+  {
+    id: "explorer",
+    name: "File Explorer",
+    accent: "linear-gradient(160deg, #FFCA5F 0%, #E8A317 100%)",
+    defaultSize: { width: 760, height: 520 },
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-full w-full" fill="none">
+        <path d="M2 6.5A1.5 1.5 0 013.5 5H9l2 2.25h9.5A1.5 1.5 0 0122 8.75v9.75A1.5 1.5 0 0120.5 20h-17A1.5 1.5 0 012 18.5v-12z" fill="#FFE9B3" />
+        <path d="M2 9.5A1.5 1.5 0 013.5 8h17A1.5 1.5 0 0122 9.5v9a1.5 1.5 0 01-1.5 1.5h-17A1.5 1.5 0 012 18.5v-9z" fill="#FFC64B" />
+      </svg>
+    ),
+  },
+  {
+    id: "browser",
+    name: "Browser",
+    accent: "linear-gradient(160deg, #5AC8FA 0%, #0A84FF 100%)",
+    defaultSize: { width: 900, height: 600 },
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-full w-full" fill="none">
+        <circle cx="12" cy="12" r="10" fill="white" />
+        <path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" stroke="#0A84FF" strokeWidth="1.4" fill="none" />
+      </svg>
+    ),
+  },
+  {
+    id: "taskmgr",
+    name: "Task Manager",
+    accent: "linear-gradient(160deg, #3A3A3C 0%, #1c1c1e 100%)",
+    defaultSize: { width: 520, height: 480 },
+    pinned: false,
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-full w-full" fill="none" stroke="#4ade80" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-8 4 5 3-9 3 7 4-4" />
+      </svg>
+    ),
+  },
+  {
+    id: "bin",
+    name: "Recycle Bin",
+    accent: "linear-gradient(160deg, #A8ADB4 0%, #6B7280 100%)",
+    defaultSize: { width: 480, height: 420 },
+    pinned: false,
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-full w-full" fill="none">
+        <path d="M5 7h14l-1.2 13.2a2 2 0 01-2 1.8H8.2a2 2 0 01-2-1.8L5 7z" fill="white" />
+        <path d="M3 7h18M9 7V4.5a1 1 0 011-1h4a1 1 0 011 1V7" stroke="#6B7280" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M10 10.5v7M14 10.5v7" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+    ),
+  },
   {
     id: "gallery",
     name: "Gallery",

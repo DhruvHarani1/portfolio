@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getApp } from "./apps";
 import type { AppId, Rect, WindowState } from "./types";
 
 export type SnapZone = "left" | "right" | "maximize" | null;
@@ -9,6 +10,7 @@ interface WindowStore {
   snapPreview: Rect | null;
   snapZone: SnapZone;
   openApp: (appId: AppId, defaultRect: Rect) => void;
+  openAppCentered: (appId: AppId) => void;
   closeWindow: (id: string) => void;
   focusWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
@@ -56,6 +58,17 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
         },
       ],
     }));
+  },
+
+  openAppCentered: (appId) => {
+    const { defaultSize } = getApp(appId);
+    const rect: Rect = {
+      x: window.innerWidth / 2 - defaultSize.width / 2,
+      y: Math.max(24, window.innerHeight / 2 - defaultSize.height / 2 - 40),
+      width: Math.min(defaultSize.width, window.innerWidth - 80),
+      height: Math.min(defaultSize.height, window.innerHeight - 160),
+    };
+    get().openApp(appId, rect);
   },
 
   closeWindow: (id) =>
