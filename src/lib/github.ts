@@ -123,8 +123,9 @@ export async function fetchAllRepos(): Promise<GitHubRepo[]> {
     // Filter out repos with no content at all
     return enriched
       .filter((r) => (r as GitHubRepo & { _hasContent: string | null })._hasContent)
-      .map(({ ...repo }) => {
-        const { _hasContent, ...clean } = repo as GitHubRepo & { _hasContent: string | null };
+      .map((repo) => {
+        const clean = repo as GitHubRepo & { _hasContent?: string | null };
+        delete clean._hasContent;
         return clean as GitHubRepo;
       });
   } catch (error) {
@@ -233,7 +234,7 @@ function extractReadmeExcerpt(content: string): string | null {
 
   // Try to find "About" or "Overview" section
   let inSection = false;
-  let sectionContent: string[] = [];
+  const sectionContent: string[] = [];
 
   for (const line of lines) {
     if (/^#{1,3}\s*(About|Overview|Description|What is)/i.test(line)) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { SectionHeading, AnimateOnScroll } from "@/components/SectionHeading";
+import SpotlightCard from "@/components/SpotlightCard";
 
 export default function Experience() {
   return (
@@ -15,7 +16,7 @@ export default function Experience() {
         </AnimateOnScroll>
 
         <AnimateOnScroll delay={0.1}>
-          <div className="relative rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated p-8 transition-all duration-300 hover:border-white/10 hover:shadow-[var(--shadow-hover)]">
+          <SpotlightCard className="relative rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated p-8 transition-all duration-300 hover:border-white/10 hover:shadow-[var(--shadow-hover)]">
             {/* Timeline dot */}
             <div className="absolute -left-px top-10 hidden h-3 w-3 -translate-x-1/2 rounded-full border-2 border-link-blue bg-bg-primary md:block" />
 
@@ -65,12 +66,12 @@ export default function Experience() {
                 </span>
               ))}
             </div>
-          </div>
+          </SpotlightCard>
         </AnimateOnScroll>
 
         {/* Education */}
         <AnimateOnScroll delay={0.2}>
-          <div className="mt-6 rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated p-8 transition-all duration-300 hover:border-white/10 hover:shadow-[var(--shadow-hover)]">
+          <SpotlightCard className="mt-6 rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated p-8 transition-all duration-300 hover:border-white/10 hover:shadow-[var(--shadow-hover)]">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div className="flex-1">
                 <h3 className="text-xl font-semibold text-text-primary">
@@ -98,7 +99,7 @@ export default function Experience() {
               <span className="text-text-tertiary">•</span>
               <span>Signals & Systems</span>
             </div>
-          </div>
+          </SpotlightCard>
         </AnimateOnScroll>
       </div>
     </section>

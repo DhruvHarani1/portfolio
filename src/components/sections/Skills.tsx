@@ -1,6 +1,7 @@
 "use client";
 
 import { SectionHeading, AnimateOnScroll } from "@/components/SectionHeading";
+import SpotlightCard from "@/components/SpotlightCard";
 
 const SKILL_GROUPS = [
   {
@@ -55,7 +56,7 @@ export default function Skills() {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {SKILL_GROUPS.map((group, i) => (
             <AnimateOnScroll key={group.category} delay={i * 0.05}>
-              <div className="rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated p-6 transition-all duration-300 hover:border-white/10 hover:shadow-[var(--shadow-hover)]">
+              <SpotlightCard className="rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated p-6 transition-all duration-300 hover:border-white/10 hover:-translate-y-1 hover:shadow-[var(--shadow-hover)]">
                 <div className="mb-4 flex items-center gap-3">
                   <span className="text-xl">{group.icon}</span>
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">
@@ -72,7 +73,7 @@ export default function Skills() {
                     </span>
                   ))}
                 </div>
-              </div>
+              </SpotlightCard>
             </AnimateOnScroll>
           ))}
         </div>

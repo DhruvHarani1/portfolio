@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SpotlightCard from "@/components/SpotlightCard";
 
 interface ProjectCardProps {
   name: string;
@@ -30,8 +31,8 @@ export default function ProjectCard({
   const isFeatured = variant === "featured";
 
   return (
-    <div
-      className={`group relative overflow-hidden rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated transition-all duration-500 hover:border-white/10 hover:shadow-[var(--shadow-hover)] ${
+    <SpotlightCard
+      className={`group relative overflow-hidden rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated transition-all duration-500 hover:border-white/10 hover:-translate-y-1 hover:shadow-[var(--shadow-hover)] ${
         isFeatured ? "p-0" : "p-6"
       }`}
     >
@@ -152,7 +153,7 @@ export default function ProjectCard({
           </div>
         </div>
       </div>
-    </div>
+    </SpotlightCard>
   );
 }
 

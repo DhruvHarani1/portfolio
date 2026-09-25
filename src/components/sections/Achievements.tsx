@@ -1,6 +1,7 @@
 "use client";
 
 import { SectionHeading, AnimateOnScroll } from "@/components/SectionHeading";
+import SpotlightCard from "@/components/SpotlightCard";
 
 const ACHIEVEMENTS = [
   {
@@ -40,7 +41,7 @@ export default function Achievements() {
         <div className="grid gap-6 md:grid-cols-2">
           {ACHIEVEMENTS.map((achievement, i) => (
             <AnimateOnScroll key={achievement.title} delay={i * 0.1}>
-              <div className="group rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated p-6 transition-all duration-300 hover:border-white/10 hover:shadow-[var(--shadow-hover)]">
+              <SpotlightCard className="group rounded-[var(--radius-card)] border border-white/5 bg-bg-elevated p-6 transition-all duration-300 hover:border-white/10 hover:-translate-y-1 hover:shadow-[var(--shadow-hover)]">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-link-blue/10 text-link-blue transition-colors group-hover:bg-link-blue/20">
                   {achievement.icon}
                 </div>
@@ -50,7 +51,7 @@ export default function Achievements() {
                 <p className="mt-2 text-sm leading-relaxed text-text-secondary">
                   {achievement.description}
                 </p>
-              </div>
+              </SpotlightCard>
             </AnimateOnScroll>
           ))}
         </div>

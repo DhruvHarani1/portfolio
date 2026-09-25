@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { AnimateOnScroll } from "@/components/SectionHeading";
+import MagneticButton from "@/components/MagneticButton";
 
 export default function Hero() {
   return (
@@ -43,7 +44,7 @@ export default function Hero() {
         <AnimateOnScroll delay={0.1}>
           {/* Headline */}
           <h1
-            className="mx-auto max-w-4xl font-bold text-text-primary"
+            className="mx-auto max-w-4xl font-bold text-gradient-shimmer"
             style={{
               fontSize: "var(--font-size-hero)",
               lineHeight: "var(--leading-title)",
@@ -66,9 +67,9 @@ export default function Hero() {
         <AnimateOnScroll delay={0.3}>
           {/* CTAs */}
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a
+            <MagneticButton
               href="#projects"
-              className="group inline-flex items-center gap-2 rounded-full bg-link-blue px-8 py-3.5 text-sm font-semibold text-white transition-all hover:bg-link-blue-hover hover:shadow-lg hover:shadow-link-blue/25 hover:scale-[1.02] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-full bg-link-blue px-8 py-3.5 text-sm font-semibold text-white transition-all hover:bg-link-blue-hover hover:shadow-lg hover:shadow-link-blue/25 active:scale-[0.98]"
               id="cta-view-projects"
             >
               View Projects
@@ -81,12 +82,12 @@ export default function Hero() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
-            </a>
+            </MagneticButton>
 
-            <a
+            <MagneticButton
               href="/resume.pdf"
               download
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-3.5 text-sm font-semibold text-text-primary transition-all hover:border-white/20 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-3.5 text-sm font-semibold text-text-primary transition-all hover:border-white/20 hover:bg-white/10 active:scale-[0.98]"
               id="cta-download-resume"
             >
               <svg
@@ -103,7 +104,7 @@ export default function Hero() {
                 />
               </svg>
               Download Resume
-            </a>
+            </MagneticButton>
           </div>
         </AnimateOnScroll>
 
